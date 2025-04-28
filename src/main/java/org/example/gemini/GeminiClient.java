@@ -4,7 +4,14 @@ import com.google.api.gax.retrying.RetrySettings;
 import com.google.api.gax.rpc.StatusCode;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.vertexai.VertexAI;
-import com.google.cloud.vertexai.api.*;
+import com.google.cloud.vertexai.api.Content;
+import com.google.cloud.vertexai.api.GenerationConfig;
+import com.google.cloud.vertexai.api.GenerateContentResponse;
+import com.google.cloud.vertexai.api.HarmCategory;
+import com.google.cloud.vertexai.api.PredictionServiceClient;
+import com.google.cloud.vertexai.api.PredictionServiceSettings;
+import com.google.cloud.vertexai.api.SafetySetting;
+import com.google.cloud.vertexai.api.Schema;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.google.common.base.Supplier;
 import lombok.extern.slf4j.Slf4j;
@@ -21,8 +28,6 @@ import java.util.stream.Stream;
 public class GeminiClient {
     private final String projectId;
     private final String location;
-    // todo エンドポイントの要否を調べる
-    private final String endpoint;
     private final GoogleCredentials credentials;
     private final GeminiProperties.GeminiTaskProperties geminiTaskProperties;
     private final PredictionServiceSettings predictionServiceSettings;
@@ -36,18 +41,17 @@ public class GeminiClient {
     public GeminiClient(
             @Nonnull String projectId,
             @Nonnull String location,
-            @Nonnull String endpoint,
             @Nonnull GoogleCredentials credentials,
             @Nonnull GeminiProperties.GeminiTaskProperties geminiTaskProperties
     ) throws IOException {
         this.projectId = projectId;
         this.location = location;
-        this.endpoint = endpoint;
         this.credentials = credentials;
         this.geminiTaskProperties = geminiTaskProperties;
         this.predictionServiceSettings = buildPredictionServiceSettings(buildRetrySettings(
                 geminiTaskProperties.getMaxAttempts(),
                 geminiTaskProperties.getTotalTimeout(),
+                geminiTaskProperties.getLogicalTimeout(),
                 geminiTaskProperties.getInitialRetryDelay(),
                 geminiTaskProperties.getMaxRetryDuration(),
                 geminiTaskProperties.getRetryDelayMultiplier(),
@@ -55,6 +59,10 @@ public class GeminiClient {
                 geminiTaskProperties.getMaxRpcTimeout(),
                 geminiTaskProperties.getRpcTimeoutMultiplier()
         ));
+    }
+
+    public GeminiResult generateContent(@Nonnull List<Content> contents) {
+        return generateContent(contents, null);
     }
 
     public GeminiResult generateContent(
@@ -72,7 +80,6 @@ public class GeminiClient {
                 final VertexAI vertexAI = new VertexAI.Builder()
                         .setProjectId(projectId)
                         .setLocation(location)
-                        //.setApiEndpoint(endpoint)
                         .setCredentials(credentials)
                         .setPredictionClientSupplier(client)
                         .build()
@@ -86,7 +93,7 @@ public class GeminiClient {
 
             return createGeminiResult(model.generateContent(contents));
         } catch (final IOException e) {
-            throw new UncheckedIOException("", e);
+            throw new UncheckedIOException("GeminiClient is failed for IOException.", e);
         }
     }
 
@@ -100,18 +107,18 @@ public class GeminiClient {
                     )
                     .filter(it -> it >= 0)
                     .min(Integer::compareTo)
-                    .orElseThrow(() -> new IllegalArgumentException(""));
+                    .orElseThrow(() -> new IllegalArgumentException("json start keyword is not found."));
 
             final int end = Stream.of(
                             json.lastIndexOf("}"),
-                            json.indexOf("]")
+                            json.lastIndexOf("]")
                     ).filter(it -> it >=0)
                     .max(Integer::compareTo)
-                    .orElseThrow(() -> new IllegalArgumentException(""));
+                    .orElseThrow(() -> new IllegalArgumentException("json end keyword is not found."));
 
             return new GeminiResult(json.substring(start, end), true);
         } catch (final IndexOutOfBoundsException | IllegalArgumentException e) {
-            log.warn("GeminiResult parse error. json={}, message={}", json, e.getMessage());
+            log.warn("GeminiResult parse failed. json={}, message={}", json, e.getMessage());
             return new GeminiResult(json, false);
         }
     }
@@ -146,6 +153,7 @@ public class GeminiClient {
     private static RetrySettings buildRetrySettings(
             int maxAttempts,
             @Nonnull Duration totalTimeout,
+            @Nonnull Duration logicalTimeout,
             @Nonnull Duration initialRetryDelay,
             @Nonnull Duration maxRetryDuration,
             @Nonnull Double retryDelayMultiplier,
@@ -162,6 +170,7 @@ public class GeminiClient {
                 .setInitialRpcTimeoutDuration(rpcInitialTimeout)
                 .setMaxRpcTimeoutDuration(maxRpcTimeout)
                 .setRpcTimeoutMultiplier(rpcTimeoutMultiplier)
+                .setLogicalTimeout(logicalTimeout)
                 .build();
     }
 

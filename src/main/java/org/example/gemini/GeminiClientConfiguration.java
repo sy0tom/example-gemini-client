@@ -12,21 +12,22 @@ import java.io.IOException;
 @Configuration
 @EnableConfigurationProperties(GeminiProperties.class)
 public class GeminiClientConfiguration {
+
     private static final String SCOPE = "https://www.googleapis.com/auth/cloud-platform";
     private final GoogleCredentials googleCredentials;
+
     public GeminiClientConfiguration(@Nonnull ServiceAccountCredentialProvider serviceAccountCredentialProvider) {
         googleCredentials = serviceAccountCredentialProvider.getByScope(SCOPE);
     }
 
-    @Bean("HogeGeminiClient")
-    public GeminiClient getHogeGeminiClient(
+    @Bean("translateGeminiClient")
+    public GeminiClient getTranslateGeminiClient(
             @Nonnull GeminiProperties geminiProperties
     ) throws IOException {
         return new GeminiClient(
                 geminiProperties.getProjectId(),
                 geminiProperties.getLocation(),
-                geminiProperties.getEndpoint(),
                 googleCredentials,
-                geminiProperties.getTasks().get("hoge"));
+                geminiProperties.getTasks().get(GeminiTasks.TRANSLATE.name().toLowerCase()));
     }
 }

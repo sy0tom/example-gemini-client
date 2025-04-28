@@ -1,1 +1,17 @@
 gemini:
+  project-id: ${PROJECT_ID}
+  location: "asia-northeast1"
+  tasks:
+    translate:
+      model-name: "gemini-2.0-flash-001"
+      temperature: 0.95f
+      topP: 0.95f
+      retry-max: 3
+      max-attempts: 2
+      total-timeout-seconds: 100
+      initial-retry-delay-seconds: 5
+      max-retry-duration-seconds: 25
+      retry-delay-multiplier: 1.5
+      rpc-initial-timeout-seconds: 15
+      max-rpc-timeout-seconds: 75
+      rpc-timeout-multiplier: 1.5
