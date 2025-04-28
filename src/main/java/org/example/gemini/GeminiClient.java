@@ -85,6 +85,7 @@ public class GeminiClient {
                 final VertexAI vertexAI = new VertexAI.Builder()
                         .setProjectId(projectId)
                         .setLocation(location)
+                        .setTransport(transport)
                         .setCredentials(credentials)
                         .setPredictionClientSupplier(client)
                         .build()
