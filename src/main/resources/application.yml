@@ -1,6 +1,7 @@
 gemini:
   project-id: ${PROJECT_ID}
   location: "asia-northeast1"
+  transport: GRPC
   tasks:
     translate:
       model-name: "gemini-2.0-flash-001"
@@ -16,3 +17,10 @@ gemini:
       rpc-initial-timeout-seconds: 15
       max-rpc-timeout-seconds: 75
       rpc-timeout-multiplier: 1.5
+
+logging:
+  level:
+    com.google.cloud.vertexai: DEBUG
+    com.google.api.gax: DEBUG
+    com.google.api.gax.httpjson: DEBUG
+    io.grpc: DEBUG

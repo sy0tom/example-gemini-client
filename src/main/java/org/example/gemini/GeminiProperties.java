@@ -1,5 +1,6 @@
 package org.example.gemini;
 
+import com.google.cloud.vertexai.Transport;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -62,5 +63,6 @@ public class GeminiProperties {
 
     private String projectId;
     private String location;
+    private Transport transport;
     private Map<String, GeminiTaskProperties> tasks;
 }

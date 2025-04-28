@@ -3,6 +3,7 @@ package org.example.gemini;
 import com.google.api.gax.retrying.RetrySettings;
 import com.google.api.gax.rpc.StatusCode;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.Content;
 import com.google.cloud.vertexai.api.GenerationConfig;
@@ -28,9 +29,11 @@ import java.util.stream.Stream;
 public class GeminiClient {
     private final String projectId;
     private final String location;
+    private final Transport transport;
     private final GoogleCredentials credentials;
     private final GeminiProperties.GeminiTaskProperties geminiTaskProperties;
     private final PredictionServiceSettings predictionServiceSettings;
+
     private static final List<SafetySetting> safetySettings = Stream.of(
             HarmCategory.HARM_CATEGORY_HATE_SPEECH,
             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
@@ -41,11 +44,13 @@ public class GeminiClient {
     public GeminiClient(
             @Nonnull String projectId,
             @Nonnull String location,
+            @Nonnull Transport transport,
             @Nonnull GoogleCredentials credentials,
             @Nonnull GeminiProperties.GeminiTaskProperties geminiTaskProperties
     ) throws IOException {
         this.projectId = projectId;
         this.location = location;
+        this.transport = transport;
         this.credentials = credentials;
         this.geminiTaskProperties = geminiTaskProperties;
         this.predictionServiceSettings = buildPredictionServiceSettings(buildRetrySettings(
@@ -143,7 +148,12 @@ public class GeminiClient {
     private PredictionServiceSettings buildPredictionServiceSettings(
             @Nonnull RetrySettings retrySettings
     ) throws IOException {
-        final PredictionServiceSettings.Builder builder = PredictionServiceSettings.newHttpJsonBuilder();
+
+        final PredictionServiceSettings.Builder builder = switch (transport) {
+            case GRPC -> PredictionServiceSettings.newBuilder();
+            case REST -> PredictionServiceSettings.newHttpJsonBuilder();
+        };
+
         builder.predictSettings()
                 .setRetrySettings(retrySettings)
                 .setRetryableCodes(StatusCode.Code.UNKNOWN, StatusCode.Code.INTERNAL, StatusCode.Code.UNAVAILABLE);

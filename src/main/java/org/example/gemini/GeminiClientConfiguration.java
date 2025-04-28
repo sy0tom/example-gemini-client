@@ -27,6 +27,7 @@ public class GeminiClientConfiguration {
         return new GeminiClient(
                 geminiProperties.getProjectId(),
                 geminiProperties.getLocation(),
+                geminiProperties.getTransport(),
                 googleCredentials,
                 geminiProperties.getTasks().get(GeminiTasks.TRANSLATE.name().toLowerCase()));
     }
