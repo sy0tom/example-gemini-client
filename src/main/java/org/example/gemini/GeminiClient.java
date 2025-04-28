@@ -161,16 +161,17 @@ public class GeminiClient {
             @Nonnull Duration maxRpcTimeout,
             @Nonnull Double rpcTimeoutMultiplier
     ) {
+        // todo リトライ設定について調査する
         return RetrySettings.newBuilder()
                 .setMaxAttempts(maxAttempts)
                 .setTotalTimeoutDuration(totalTimeout)
+                //.setLogicalTimeout(logicalTimeout)
                 .setInitialRetryDelayDuration(initialRetryDelay)
                 .setMaxRetryDelayDuration(maxRetryDuration)
                 .setRetryDelayMultiplier(retryDelayMultiplier)
                 .setInitialRpcTimeoutDuration(rpcInitialTimeout)
                 .setMaxRpcTimeoutDuration(maxRpcTimeout)
                 .setRpcTimeoutMultiplier(rpcTimeoutMultiplier)
-                .setLogicalTimeout(logicalTimeout)
                 .build();
     }
 
