@@ -1,6 +1,7 @@
 package org.example.gemini;
 
 import com.google.auth.oauth2.GoogleCredentials;
+import lombok.RequiredArgsConstructor;
 import org.example.provider.ServiceAccountCredentialProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -11,14 +12,10 @@ import java.io.IOException;
 
 @Configuration
 @EnableConfigurationProperties(GeminiProperties.class)
+@RequiredArgsConstructor
 public class GeminiClientConfiguration {
 
-    private static final String SCOPE = "https://www.googleapis.com/auth/cloud-platform";
-    private final GoogleCredentials googleCredentials;
-
-    public GeminiClientConfiguration(@Nonnull ServiceAccountCredentialProvider serviceAccountCredentialProvider) {
-        googleCredentials = serviceAccountCredentialProvider.getByScope(SCOPE);
-    }
+    private final ServiceAccountCredentialProvider serviceAccountCredentialProvider;
 
     @Bean("translateGeminiClient")
     public GeminiClient getTranslateGeminiClient(
@@ -28,7 +25,7 @@ public class GeminiClientConfiguration {
                 geminiProperties.getProjectId(),
                 geminiProperties.getLocation(),
                 geminiProperties.getTransport(),
-                googleCredentials,
+                serviceAccountCredentialProvider.getCredentialsByScope(geminiProperties.getCredentialsScope()),
                 geminiProperties.getTasks().get(GeminiTasks.TRANSLATE.name().toLowerCase()));
     }
 }

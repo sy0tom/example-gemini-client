@@ -10,7 +10,7 @@ import java.time.Duration;
 import java.util.Map;
 
 @Data
-@ConfigurationProperties("gemini")
+@ConfigurationProperties("gcp.service.gemini")
 public class GeminiProperties {
 
     @Setter
@@ -61,6 +61,7 @@ public class GeminiProperties {
         }
     }
 
+    private String credentialsScope;
     private String projectId;
     private String location;
     private Transport transport;

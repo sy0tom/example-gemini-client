@@ -78,7 +78,7 @@ public class GeminiClient {
             try {
                 return PredictionServiceClient.create(predictionServiceSettings);
             } catch (final IOException e) {
-                throw new RuntimeException(e);
+                throw new UncheckedIOException("", e);
             }
         };
         try (
