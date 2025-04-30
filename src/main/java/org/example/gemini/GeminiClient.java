@@ -1,7 +1,5 @@
 package org.example.gemini;
 
-import com.google.api.gax.retrying.RetrySettings;
-import com.google.api.gax.rpc.StatusCode;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
@@ -14,15 +12,17 @@ import com.google.cloud.vertexai.api.PredictionServiceSettings;
 import com.google.cloud.vertexai.api.SafetySetting;
 import com.google.cloud.vertexai.api.Schema;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
-import com.google.common.base.Supplier;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import lombok.extern.slf4j.Slf4j;
+import org.example.gemini.factory.GenerationConfigFactory;
+import org.example.gemini.factory.PredictionServiceSettingsFactory;
+import org.example.gemini.factory.RetrySettingsFactory;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.time.Duration;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -31,7 +31,9 @@ public class GeminiClient {
     private final String location;
     private final Transport transport;
     private final GoogleCredentials credentials;
-    private final GeminiProperties.GeminiTaskProperties geminiTaskProperties;
+    private final String modelName;
+    private final float temperature;
+    private final float topP;
     private final PredictionServiceSettings predictionServiceSettings;
 
     private static final List<SafetySetting> safetySettings = Stream.of(
@@ -46,23 +48,25 @@ public class GeminiClient {
             @Nonnull String location,
             @Nonnull Transport transport,
             @Nonnull GoogleCredentials credentials,
-            @Nonnull GeminiProperties.GeminiTaskProperties geminiTaskProperties
+            @Nonnull GeminiProperties.GeminiTaskProperties taskProps
     ) throws IOException {
         this.projectId = projectId;
         this.location = location;
         this.transport = transport;
         this.credentials = credentials;
-        this.geminiTaskProperties = geminiTaskProperties;
-        this.predictionServiceSettings = buildPredictionServiceSettings(buildRetrySettings(
-                geminiTaskProperties.getMaxAttempts(),
-                geminiTaskProperties.getTotalTimeout(),
-                geminiTaskProperties.getLogicalTimeout(),
-                geminiTaskProperties.getInitialRetryDelay(),
-                geminiTaskProperties.getMaxRetryDuration(),
-                geminiTaskProperties.getRetryDelayMultiplier(),
-                geminiTaskProperties.getRpcInitialTimeout(),
-                geminiTaskProperties.getMaxRpcTimeout(),
-                geminiTaskProperties.getRpcTimeoutMultiplier()
+        this.modelName = taskProps.getModelName();
+        this.temperature = taskProps.getTemperature();
+        this.topP = taskProps.getTopP();
+        this.predictionServiceSettings = PredictionServiceSettingsFactory.create(transport, RetrySettingsFactory.create(
+                taskProps.getMaxAttempts(),
+                taskProps.getTotalTimeout(),
+                taskProps.getLogicalTimeout(),
+                taskProps.getInitialRetryDelay(),
+                taskProps.getMaxRetryDuration(),
+                taskProps.getRetryDelayMultiplier(),
+                taskProps.getRpcInitialTimeout(),
+                taskProps.getMaxRpcTimeout(),
+                taskProps.getRpcTimeoutMultiplier()
         ));
     }
 
@@ -74,33 +78,39 @@ public class GeminiClient {
             @Nonnull List<Content> contents,
             Schema responseSchema
     ) {
-        final Supplier<PredictionServiceClient> client = ()-> {
-            try {
-                return PredictionServiceClient.create(predictionServiceSettings);
-            } catch (final IOException e) {
-                throw new UncheckedIOException("", e);
-            }
-        };
-        try (
-                final VertexAI vertexAI = new VertexAI.Builder()
-                        .setProjectId(projectId)
-                        .setLocation(location)
-                        .setTransport(transport)
-                        .setCredentials(credentials)
-                        .setPredictionClientSupplier(client)
-                        .build()
-        ) {
-            final GenerativeModel model = new GenerativeModel(geminiTaskProperties.getModelName(), vertexAI);
-            model.withSafetySettings(safetySettings);
-            model.withGenerationConfig(buildGenerateConfig(
-                    this.geminiTaskProperties.getTemperature(),
-                    this.geminiTaskProperties.getTopP(),
-                    responseSchema));
-
-            return createGeminiResult(model.generateContent(contents));
+        try (final VertexAI vertexAI = buildVertexAi()) {
+            return createGeminiResult(buildModel(vertexAI,
+                    GenerationConfigFactory.create(temperature, topP, responseSchema)).generateContent(contents));
         } catch (final IOException e) {
             throw new UncheckedIOException("GeminiClient is failed for IOException.", e);
         }
+    }
+
+    private VertexAI buildVertexAi() {
+        return new VertexAI.Builder()
+                .setProjectId(projectId)
+                .setLocation(location)
+                .setTransport(transport)
+                .setCredentials(credentials)
+                .setPredictionClientSupplier(
+                        () -> {
+                            try {
+                                return PredictionServiceClient.create(predictionServiceSettings);
+                            } catch (final IOException e) {
+                                throw new UncheckedIOException("", e);
+                            }
+                        }
+                ).build();
+    }
+
+    private GenerativeModel buildModel(
+            @Nonnull VertexAI vertexAI,
+            @Nonnull GenerationConfig generationConfig
+    ) {
+        final GenerativeModel model = new GenerativeModel(modelName, vertexAI);
+        model.withSafetySettings(safetySettings);
+        model.withGenerationConfig(generationConfig);
+        return model;
     }
 
     private GeminiResult createGeminiResult(@Nonnull GenerateContentResponse response) {
@@ -127,63 +137,6 @@ public class GeminiClient {
             log.warn("GeminiResult parse failed. json={}, message={}", json, e.getMessage());
             return new GeminiResult(json, false);
         }
-    }
-
-    private GenerationConfig buildGenerateConfig(
-            float temperature,
-            float topP,
-            Schema responseSchema
-    ) {
-        final GenerationConfig.Builder builder = GenerationConfig.newBuilder()
-                .setTemperature(temperature)
-                .setTopP(topP);
-
-        if (Objects.nonNull(responseSchema)) {
-            builder.setResponseSchema(responseSchema);
-            builder.setResponseMimeType("application/json");
-        }
-
-        return builder.build();
-    }
-
-    private PredictionServiceSettings buildPredictionServiceSettings(
-            @Nonnull RetrySettings retrySettings
-    ) throws IOException {
-
-        final PredictionServiceSettings.Builder builder = switch (transport) {
-            case GRPC -> PredictionServiceSettings.newBuilder();
-            case REST -> PredictionServiceSettings.newHttpJsonBuilder();
-        };
-
-        builder.predictSettings()
-                .setRetrySettings(retrySettings)
-                .setRetryableCodes(StatusCode.Code.UNKNOWN, StatusCode.Code.INTERNAL, StatusCode.Code.UNAVAILABLE);
-        return builder.build();
-    }
-
-    private static RetrySettings buildRetrySettings(
-            int maxAttempts,
-            @Nonnull Duration totalTimeout,
-            @Nonnull Duration logicalTimeout,
-            @Nonnull Duration initialRetryDelay,
-            @Nonnull Duration maxRetryDuration,
-            @Nonnull Double retryDelayMultiplier,
-            @Nonnull Duration rpcInitialTimeout,
-            @Nonnull Duration maxRpcTimeout,
-            @Nonnull Double rpcTimeoutMultiplier
-    ) {
-        // todo リトライ設定について調査する
-        return RetrySettings.newBuilder()
-                .setMaxAttempts(maxAttempts)
-                .setTotalTimeoutDuration(totalTimeout)
-                //.setLogicalTimeout(logicalTimeout)
-                .setInitialRetryDelayDuration(initialRetryDelay)
-                .setMaxRetryDelayDuration(maxRetryDuration)
-                .setRetryDelayMultiplier(retryDelayMultiplier)
-                .setInitialRpcTimeoutDuration(rpcInitialTimeout)
-                .setMaxRpcTimeoutDuration(maxRpcTimeout)
-                .setRpcTimeoutMultiplier(rpcTimeoutMultiplier)
-                .build();
     }
 
     private static SafetySetting buildSafetySetting(@Nonnull HarmCategory harmCategory) {
