@@ -22,8 +22,6 @@ public class GeminiProperties {
         @Getter
         private float topP;
         @Getter
-        private int retryMax;
-        @Getter
         private int maxAttempts;
         private int totalTimeoutSeconds;
         private int logicalTimeoutSeconds;

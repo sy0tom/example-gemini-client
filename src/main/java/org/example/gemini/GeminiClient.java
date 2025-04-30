@@ -12,9 +12,8 @@ import com.google.cloud.vertexai.api.PredictionServiceSettings;
 import com.google.cloud.vertexai.api.SafetySetting;
 import com.google.cloud.vertexai.api.Schema;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import lombok.extern.slf4j.Slf4j;
+import org.example.exception.GeminiResultInvalidException;
 import org.example.gemini.factory.GenerationConfigFactory;
 import org.example.gemini.factory.PredictionServiceSettingsFactory;
 import org.example.gemini.factory.RetrySettingsFactory;
@@ -70,16 +69,16 @@ public class GeminiClient {
         ));
     }
 
-    public GeminiResult generateContent(@Nonnull List<Content> contents) {
+    public String generateContent(@Nonnull List<Content> contents) {
         return generateContent(contents, null);
     }
 
-    public GeminiResult generateContent(
+    public String generateContent(
             @Nonnull List<Content> contents,
             Schema responseSchema
     ) {
         try (final VertexAI vertexAI = buildVertexAi()) {
-            return createGeminiResult(buildModel(vertexAI,
+            return trimJson(buildModel(vertexAI,
                     GenerationConfigFactory.create(temperature, topP, responseSchema)).generateContent(contents));
         } catch (final IOException e) {
             throw new UncheckedIOException("GeminiClient is failed for IOException.", e);
@@ -113,8 +112,8 @@ public class GeminiClient {
         return model;
     }
 
-    private GeminiResult createGeminiResult(@Nonnull GenerateContentResponse response) {
-        String json = "";
+    private String trimJson(@Nonnull GenerateContentResponse response) {
+        String json = null;
         try {
             json = response.getCandidates(0).getContent().getParts(0).getText();
             final int start = Stream.of(
@@ -132,10 +131,9 @@ public class GeminiClient {
                     .max(Integer::compareTo)
                     .orElseThrow(() -> new IllegalArgumentException("json end keyword is not found."));
 
-            return new GeminiResult(json.substring(start, end), true);
+            return json.substring(start, end);
         } catch (final IndexOutOfBoundsException | IllegalArgumentException e) {
-            log.warn("GeminiResult parse failed. json={}, message={}", json, e.getMessage());
-            return new GeminiResult(json, false);
+            throw new GeminiResultInvalidException(json, e);
         }
     }
 
