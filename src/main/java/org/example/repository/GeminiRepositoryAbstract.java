@@ -6,6 +6,7 @@ import io.grpc.StatusRuntimeException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.exception.GeminiResultInvalidException;
+import org.example.model.ResultHolderModel;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -18,7 +19,7 @@ public abstract class GeminiRepositoryAbstract {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final int RETRY_WAIT_INTERVAL_MS = 500;
 
-    protected <T> T callGenerateContent(
+    protected <T> ResultHolderModel<T> callGenerateContent(
             @Nonnull Supplier<String> geminiContentSupplier,
             @Nonnull Class<T> responseClass,
             Validator<T> validator
@@ -26,18 +27,24 @@ public abstract class GeminiRepositoryAbstract {
         return callGenerateContent(1, geminiContentSupplier, responseClass, validator);
     }
 
-    protected <T> T callGenerateContent(
+    protected <T> ResultHolderModel<T> callGenerateContent(
             int retryMax,
             @Nonnull Supplier<String> geminiContentSupplier,
             @Nonnull Class<T> responseClass,
             Validator<T> validator
     ) {
+        final ResultHolderModel<T> result = new ResultHolderModel<>();
+
         int retryCount = 0;
         while (isRetryAble(retryCount++, retryMax)) {
             try {
-                return parseAndValidate(geminiContentSupplier.get(), responseClass, validator);
+                final String json = geminiContentSupplier.get();
+                result.setSuccessResult(
+                        new ResultHolderModel.SuccessResult<>(json, parseAndValidate(json, responseClass, validator)));
+                return result;
             } catch (final GeminiResultInvalidException e) {
                 log.warn("Gemini result is invalid. json={}, message={}", e.getJson(), e.getMessage());
+                result.addFailedResult(e.getJson());
             } catch (final StatusRuntimeException e) {
                 final Status.Code code = e.getStatus().getCode();
                 log.warn("Gemini api call failed. code={}", code);
@@ -46,7 +53,7 @@ public abstract class GeminiRepositoryAbstract {
                 }
             }
         }
-        throw new RuntimeException("All retry failed.");
+        return result;
     }
 
     private <T> T parseAndValidate(String json, @Nonnull Class<T> clazz, Validator<T> validator) {

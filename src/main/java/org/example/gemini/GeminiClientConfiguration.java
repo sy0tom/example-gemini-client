@@ -1,6 +1,5 @@
 package org.example.gemini;
 
-import com.google.auth.oauth2.GoogleCredentials;
 import lombok.RequiredArgsConstructor;
 import org.example.provider.ServiceAccountCredentialProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

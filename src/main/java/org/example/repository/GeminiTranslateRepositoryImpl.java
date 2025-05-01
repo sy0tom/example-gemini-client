@@ -1,13 +1,14 @@
 package org.example.repository;
 
-import com.google.cloud.vertexai.api.Content;
-import com.google.cloud.vertexai.api.Part;
 import lombok.RequiredArgsConstructor;
 import org.example.gemini.GeminiClient;
+import org.example.model.ResultHolderModel;
+import org.example.model.TranslatePromptModel;
+import org.example.model.TranslateResultModel;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import javax.annotation.Nonnull;
 
 @Repository
 @RequiredArgsConstructor
@@ -17,17 +18,17 @@ public class GeminiTranslateRepositoryImpl extends GeminiRepositoryAbstract impl
     private final GeminiClient geminiClient;
 
     @Override
-    public String translate() {
-        final int retryMax = 3;
-        return callGenerateContent(retryMax, () -> geminiClient.generateContent(getInputContents()), String.class, null);
+    public ResultHolderModel<TranslateResultModel> translate(@Nonnull TranslatePromptModel prompt) {
+        return callGenerateContent(
+                () -> geminiClient.generateContent(
+                        prompt.getContents(), TranslatePromptModel.responseSchema), TranslateResultModel.class, null);
     }
 
-    private List<Content> getInputContents() {
-        return List.of(Content.newBuilder()
-                .setRole("user")
-                .addAllParts(List.of(
-                        Part.newBuilder().setText("helloを翻訳してください。出力はjson形式にしてください。").build()
-                ))
-                .build());
+    @Override
+    public ResultHolderModel<TranslateResultModel> translateWithRetry(@Nonnull TranslatePromptModel prompt) {
+        final int retryMax = 3;
+        return callGenerateContent(
+                retryMax, () -> geminiClient.generateContent(
+                        prompt.getContents(), TranslatePromptModel.responseSchema), TranslateResultModel.class, null);
     }
 }
