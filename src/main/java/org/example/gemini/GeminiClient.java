@@ -78,7 +78,7 @@ public class GeminiClient {
             Schema responseSchema
     ) {
         try (final VertexAI vertexAI = buildVertexAi()) {
-            return trimJson(buildModel(vertexAI,
+            return getAndTrimJson(buildModel(vertexAI,
                     GenerationConfigFactory.create(temperature, topP, responseSchema)).generateContent(contents));
         } catch (final IOException e) {
             throw new UncheckedIOException("GeminiClient is failed for IOException.", e);
@@ -96,7 +96,7 @@ public class GeminiClient {
                             try {
                                 return PredictionServiceClient.create(predictionServiceSettings);
                             } catch (final IOException e) {
-                                throw new UncheckedIOException("", e);
+                                throw new UncheckedIOException("Failed build VertexAI.", e);
                             }
                         }
                 ).build();
@@ -112,7 +112,7 @@ public class GeminiClient {
         return model;
     }
 
-    private String trimJson(@Nonnull GenerateContentResponse response) {
+    private String getAndTrimJson(@Nonnull GenerateContentResponse response) {
         String json = null;
         try {
             json = response.getCandidates(0).getContent().getParts(0).getText();
@@ -127,9 +127,9 @@ public class GeminiClient {
             final int end = Stream.of(
                             json.lastIndexOf("}"),
                             json.lastIndexOf("]")
-                    ).filter(it -> it >=0)
+                    ).filter(it -> it >= 0)
                     .max(Integer::compareTo)
-                    .orElseThrow(() -> new IllegalArgumentException("json end keyword is not found."));
+                    .orElseThrow(() -> new IllegalArgumentException("json end keyword is not found.")) + 1;
 
             return json.substring(start, end);
         } catch (final IndexOutOfBoundsException | IllegalArgumentException e) {
