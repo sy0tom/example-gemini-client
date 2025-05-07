@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class TranslateResultModel {
 
-  String JP;
-  String EN;
-  String KO;
+  String jp;
+  String en;
+  String ko;
 }

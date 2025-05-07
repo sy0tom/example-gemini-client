@@ -49,10 +49,11 @@ public abstract class GeminiRepositoryAbstract {
         result.addFailedResult(e.getJson());
       } catch (final StatusRuntimeException e) {
         final Status.Code code = e.getStatus().getCode();
-        log.warn("Gemini api call failed. code={}", code);
-        if (shouldWaitBeforeRetry(code)) {
-          waitBeforeRetry(retryCount);
-        }
+        log.warn("Gemini api call failed due to StatysRuntimeException. code={}, message={}",
+            e.getStatus().getCode(), e.getMessage());
+        handleStatusRuntimeException(code, retryCount);
+      } catch (final RuntimeException e) {
+        log.warn("Gemini api call failed due to RuntimeException. message={}", e.getMessage());
       }
     }
     return result;
@@ -74,9 +75,16 @@ public abstract class GeminiRepositoryAbstract {
     return retryCount < retryMax;
   }
 
-  private static boolean shouldWaitBeforeRetry(@Nonnull Status.Code code) {
-    return Objects.equals(code, Status.Code.DEADLINE_EXCEEDED) || Objects.equals(code,
-        Status.Code.RESOURCE_EXHAUSTED);
+  private static void handleStatusRuntimeException(@Nonnull Status.Code code, int retryCount) {
+    boolean shouldBeWait = switch (code) {
+      case DEADLINE_EXCEEDED, RESOURCE_EXHAUSTED -> true;
+      case UNKNOWN, INTERNAL, UNAVAILABLE -> false;
+      default -> throw new RuntimeException();
+    };
+
+    if (shouldBeWait) {
+      waitBeforeRetry(retryCount);
+    }
   }
 
   private static void waitBeforeRetry(int retryCount) {

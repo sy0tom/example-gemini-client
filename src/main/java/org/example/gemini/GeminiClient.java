@@ -37,13 +37,16 @@ public class GeminiClient {
           HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, HarmCategory.HARM_CATEGORY_HARASSMENT)
       .map(GeminiClient::buildSafetySetting).toList();
 
+  private static final String ENDPOINT_FORMAT = "projects/%s/locations/%s/publishers/google/models/%s";
+
   public GeminiClient(
-      @Nonnull String endpoint,
+      @Nonnull String projectId,
+      @Nonnull String location,
       @Nonnull Transport transport,
       @Nonnull CredentialsProvider credentialsProvider,
       @Nonnull GeminiProperties.GeminiTaskProperties taskProps
   ) throws IOException {
-    this.endpoint = endpoint;
+    this.endpoint = String.format(ENDPOINT_FORMAT, projectId, location, taskProps.getModelName());
     this.temperature = taskProps.getTemperature();
     this.topP = taskProps.getTopP();
     this.predictionServiceSettings = PredictionServiceSettingsFactory.create(
@@ -52,7 +55,6 @@ public class GeminiClient {
         RetrySettingsFactory.create(
             taskProps.getMaxAttempts(),
             taskProps.getTotalTimeout(),
-            taskProps.getLogicalTimeout(),
             taskProps.getInitialRetryDelay(),
             taskProps.getMaxRetryDuration(),
             taskProps.getRetryDelayMultiplier(),

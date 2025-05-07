@@ -20,7 +20,7 @@ public class Main implements CommandLineRunner {
 
   @Override
   public void run(String... args) {
-    System.out.println(translateService.translate("おはよう").getEN());
-    System.out.println(translateService.translateWithRetry("おやすみ").getKO());
+    System.out.println(translateService.translate("おはよう").getEn());
+    System.out.println(translateService.translateWithRetry("おやすみ").getKo());
   }
 }

@@ -1,4 +1,4 @@
-package org.example.provider;
+package org.example.gemini.provider;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

@@ -1,5 +1,5 @@
 package org.example.gemini;
 
-public enum GeminiTasks {
+public enum GeminiTask {
   TRANSLATE
 }

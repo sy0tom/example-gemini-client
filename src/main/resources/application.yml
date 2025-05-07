@@ -13,7 +13,6 @@ gcp:
           topP: 0.95f
           max-attempts: 2
           total-timeout-seconds: 100
-          logical-timeout-seconds: 100
           initial-retry-delay-seconds: 5
           max-retry-duration-seconds: 25
           retry-delay-multiplier: 1.5

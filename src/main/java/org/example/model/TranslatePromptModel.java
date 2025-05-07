@@ -20,24 +20,24 @@ public class TranslatePromptModel {
       
       [出力例1]
       {
-        "JP": "こんにちは",
-        "EN": "Hello",
-        "KO": "안녕하세요"
+        "jp": "こんにちは",
+        "en": "Hello",
+        "ko": "안녕하세요"
       }
       
       [出力例2]
       {
-        "JP": "ありがとう",
-        "EN": "Thanks you",
-        "KO": "감사합니다"
+        "jp": "ありがとう",
+        "en": "Thanks you",
+        "ko": "감사합니다"
       }
       """;
   public static final Schema responseSchema = Schema.newBuilder()
       .setType(Type.OBJECT)
       .putAllProperties(Map.of(
-          "JP", Schema.newBuilder().setType(Type.STRING).build(),
-          "EN", Schema.newBuilder().setType(Type.STRING).build(),
-          "KO", Schema.newBuilder().setType(Type.STRING).build()
+          "jp", Schema.newBuilder().setType(Type.STRING).build(),
+          "en", Schema.newBuilder().setType(Type.STRING).build(),
+          "ko", Schema.newBuilder().setType(Type.STRING).build()
       ))
       .build();
 
