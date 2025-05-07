@@ -1,8 +1,9 @@
 package org.example.provider;
 
-import com.google.auth.oauth2.GoogleCredentials;
+import com.google.api.gax.core.CredentialsProvider;
+import com.google.auth.Credentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
-import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -11,15 +12,19 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
-@Getter
 @Configuration
 @EnableConfigurationProperties(ServiceAccountCredentialProperties.class)
-public class ServiceAccountCredentialProvider {
+public class ServiceAccountCredentialProvider implements CredentialsProvider {
 
     private final ServiceAccountCredentials serviceAccountCredentials;
+    @Setter
+    private String scope;
 
-    public ServiceAccountCredentialProvider(@Nonnull ServiceAccountCredentialProperties properties) {
+    public ServiceAccountCredentialProvider(
+            @Nonnull ServiceAccountCredentialProperties properties
+    ) {
         try {
             this.serviceAccountCredentials = ServiceAccountCredentials.fromStream(
                     new ByteArrayInputStream(properties.getCredentialsValue().getBytes(StandardCharsets.UTF_8)));
@@ -28,7 +33,11 @@ public class ServiceAccountCredentialProvider {
         }
     }
 
-    public GoogleCredentials getCredentialsByScope(@Nonnull String scope) {
-        return serviceAccountCredentials.createScoped(scope);
+    @Override
+    public Credentials getCredentials() {
+        if (Objects.nonNull(scope)) {
+            return serviceAccountCredentials.createScoped(scope);
+        }
+        return serviceAccountCredentials;
     }
 }

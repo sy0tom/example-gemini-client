@@ -20,11 +20,11 @@ public class GeminiClientConfiguration {
     public GeminiClient getTranslateGeminiClient(
             @Nonnull GeminiProperties geminiProperties
     ) throws IOException {
+        serviceAccountCredentialProvider.setScope(geminiProperties.getCredentialsScope());
         return new GeminiClient(
                 geminiProperties.getProjectId(),
-                geminiProperties.getLocation(),
                 geminiProperties.getTransport(),
-                serviceAccountCredentialProvider.getCredentialsByScope(geminiProperties.getCredentialsScope()),
+                serviceAccountCredentialProvider,
                 geminiProperties.getTasks().get(GeminiTasks.TRANSLATE.name().toLowerCase()));
     }
 }
