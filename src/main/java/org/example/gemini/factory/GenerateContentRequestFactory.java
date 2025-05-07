@@ -9,17 +9,17 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 public class GenerateContentRequestFactory {
-    public static GenerateContentRequest create(
-            @Nonnull String model,
-            @Nonnull GenerationConfig generationConfig,
-            @Nonnull List<SafetySetting> safetySettings,
-            @Nonnull List<Content> contents
-    ) {
-        return GenerateContentRequest.newBuilder()
-                .setModel(model)
-                .setGenerationConfig(generationConfig)
-                .addAllSafetySettings(safetySettings)
-                .addAllContents(contents)
-                .build();
-    }
+  public static GenerateContentRequest create(
+    @Nonnull String model,
+    @Nonnull GenerationConfig generationConfig,
+    @Nonnull List<SafetySetting> safetySettings,
+    @Nonnull List<Content> contents
+  ) {
+    return GenerateContentRequest.newBuilder()
+      .setModel(model)
+      .setGenerationConfig(generationConfig)
+      .addAllSafetySettings(safetySettings)
+      .addAllContents(contents)
+      .build();
+  }
 }

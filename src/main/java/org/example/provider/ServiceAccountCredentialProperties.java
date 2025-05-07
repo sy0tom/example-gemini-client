@@ -6,5 +6,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Data
 @ConfigurationProperties("gcp")
 public class ServiceAccountCredentialProperties {
-    private String credentialsValue;
+
+  private String credentialsValue;
 }

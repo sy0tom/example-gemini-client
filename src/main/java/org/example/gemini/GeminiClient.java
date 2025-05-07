@@ -26,12 +26,16 @@ import java.util.stream.Stream;
 
 @Slf4j
 public class GeminiClient {
+
   private final String endpoint;
   private final float temperature;
   private final float topP;
   private final PredictionServiceSettings predictionServiceSettings;
 
-  private static final List<SafetySetting> safetySettings = Stream.of(HarmCategory.HARM_CATEGORY_HATE_SPEECH, HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, HarmCategory.HARM_CATEGORY_HARASSMENT).map(GeminiClient::buildSafetySetting).toList();
+  private static final List<SafetySetting> safetySettings = Stream.of(
+          HarmCategory.HARM_CATEGORY_HATE_SPEECH, HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, HarmCategory.HARM_CATEGORY_HARASSMENT)
+      .map(GeminiClient::buildSafetySetting).toList();
 
   public GeminiClient(
       @Nonnull String endpoint,
@@ -46,15 +50,15 @@ public class GeminiClient {
         transport,
         credentialsProvider,
         RetrySettingsFactory.create(
-          taskProps.getMaxAttempts(),
-          taskProps.getTotalTimeout(),
-          taskProps.getLogicalTimeout(),
-          taskProps.getInitialRetryDelay(),
-          taskProps.getMaxRetryDuration(),
-          taskProps.getRetryDelayMultiplier(),
-          taskProps.getRpcInitialTimeout(),
-          taskProps.getMaxRpcTimeout(),
-          taskProps.getRpcTimeoutMultiplier()));
+            taskProps.getMaxAttempts(),
+            taskProps.getTotalTimeout(),
+            taskProps.getLogicalTimeout(),
+            taskProps.getInitialRetryDelay(),
+            taskProps.getMaxRetryDuration(),
+            taskProps.getRetryDelayMultiplier(),
+            taskProps.getRpcInitialTimeout(),
+            taskProps.getMaxRpcTimeout(),
+            taskProps.getRpcTimeoutMultiplier()));
   }
 
   public String generateContent(@Nonnull List<Content> contents) {
@@ -63,9 +67,11 @@ public class GeminiClient {
 
   public String generateContent(@Nonnull List<Content> contents, Schema responseSchema) {
     ApiFuture<GenerateContentResponse> futureCall;
-    try (final PredictionServiceClient client = PredictionServiceClient.create(predictionServiceSettings)) {
+    try (final PredictionServiceClient client = PredictionServiceClient.create(
+        predictionServiceSettings)) {
       final GenerateContentRequest request = GenerateContentRequestFactory.create(
-        endpoint, GenerationConfigFactory.create(temperature, topP, responseSchema), safetySettings, contents);
+          endpoint, GenerationConfigFactory.create(temperature, topP, responseSchema),
+          safetySettings, contents);
 
       futureCall = client.generateContentCallable().futureCall(request);
 
@@ -83,14 +89,16 @@ public class GeminiClient {
     try {
       json = response.getCandidates(0).getContent().getParts(0).getText();
       final int start = Stream.of(json.indexOf("{"), json.indexOf("["))
-        .filter(it -> it >= 0)
-        .min(Integer::compareTo)
-        .orElseThrow(() -> new IllegalArgumentException("json start keyword is not found."));
+          .filter(it -> it >= 0)
+          .min(Integer::compareTo)
+          .orElseThrow(() -> new IllegalArgumentException("json start keyword is not found."));
 
       final int end = Stream.of(json.lastIndexOf("}"), json.lastIndexOf("]"))
-        .filter(it -> it >= 0)
-        .max(Integer::compareTo)
-        .orElseThrow(() -> new IllegalArgumentException("json end keyword is not found.")) + 1;
+                          .filter(it -> it >= 0)
+                          .max(Integer::compareTo)
+                          .orElseThrow(
+                              () -> new IllegalArgumentException("json end keyword is not found."))
+                      + 1;
 
       return json.substring(start, end);
     } catch (final IndexOutOfBoundsException | IllegalArgumentException e) {
@@ -100,8 +108,8 @@ public class GeminiClient {
 
   private static SafetySetting buildSafetySetting(@Nonnull HarmCategory harmCategory) {
     return SafetySetting.newBuilder()
-      .setCategory(harmCategory)
-      .setThreshold(SafetySetting.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE)
-      .build();
+        .setCategory(harmCategory)
+        .setThreshold(SafetySetting.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE)
+        .build();
   }
 }

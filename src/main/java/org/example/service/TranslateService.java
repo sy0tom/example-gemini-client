@@ -13,32 +13,35 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class TranslateService {
-    private final TranslateRepository translateRepository;
+
+  private final TranslateRepository translateRepository;
 
 
-    public TranslateResultModel translate(@Nonnull String text) {
-        return handleTranslateResult(translateRepository.translate(new TranslatePromptModel(text)));
+  public TranslateResultModel translate(@Nonnull String text) {
+    return handleTranslateResult(translateRepository.translate(new TranslatePromptModel(text)));
+  }
+
+  public TranslateResultModel translateWithRetry(@Nonnull String text) {
+    return handleTranslateResult(
+        translateRepository.translateWithRetry(new TranslatePromptModel(text)));
+  }
+
+  private TranslateResultModel handleTranslateResult(
+      @Nonnull ResultHolderModel<TranslateResultModel> result) {
+    if (!result.getFailedResultJsons().isEmpty()) {
+      result.getFailedResultJsons().forEach(it -> write(false, it));
     }
 
-    public TranslateResultModel translateWithRetry(@Nonnull String text) {
-        return handleTranslateResult(translateRepository.translateWithRetry(new TranslatePromptModel(text)));
+    if (Objects.isNull(result.getSuccessResult())) {
+      throw new RuntimeException("Translate task is failed.");
     }
 
-    private TranslateResultModel handleTranslateResult(@Nonnull ResultHolderModel<TranslateResultModel> result) {
-        if (!result.getFailedResultJsons().isEmpty()) {
-            result.getFailedResultJsons().forEach(it -> write(false, it));
-        }
+    write(true, result.getSuccessResult().getJson());
 
-        if (Objects.isNull(result.getSuccessResult())) {
-            throw new RuntimeException("Translate task is failed.");
-        }
+    return result.getSuccessResult().getData();
+  }
 
-        write(true, result.getSuccessResult().getJson());
-
-        return result.getSuccessResult().getData();
-    }
-
-    private void write(boolean isSuccess, String json) {
-        System.out.printf("result: %s data: %s%n", isSuccess, json);
-    }
+  private void write(boolean isSuccess, String json) {
+    System.out.printf("result: %s data: %s%n", isSuccess, json);
+  }
 }

@@ -12,20 +12,21 @@ import java.io.IOException;
 
 public class PredictionServiceSettingsFactory {
 
-    public static PredictionServiceSettings create(
-            @Nonnull Transport transport,
-            @Nonnull CredentialsProvider credentialsProvider,
-            @Nonnull RetrySettings retrySettings
-    ) throws IOException {
+  public static PredictionServiceSettings create(
+      @Nonnull Transport transport,
+      @Nonnull CredentialsProvider credentialsProvider,
+      @Nonnull RetrySettings retrySettings
+  ) throws IOException {
 
-        final PredictionServiceSettings.Builder builder = switch (transport) {
-            case GRPC -> PredictionServiceSettings.newBuilder();
-            case REST -> PredictionServiceSettings.newHttpJsonBuilder();
-        };
-        builder.setCredentialsProvider(credentialsProvider);
-        builder.predictSettings()
-                .setRetrySettings(retrySettings)
-                .setRetryableCodes(StatusCode.Code.UNKNOWN, StatusCode.Code.INTERNAL, StatusCode.Code.UNAVAILABLE);
-        return builder.build();
-    }
+    final PredictionServiceSettings.Builder builder = switch (transport) {
+      case GRPC -> PredictionServiceSettings.newBuilder();
+      case REST -> PredictionServiceSettings.newHttpJsonBuilder();
+    };
+    builder.setCredentialsProvider(credentialsProvider);
+    builder.predictSettings()
+        .setRetrySettings(retrySettings)
+        .setRetryableCodes(StatusCode.Code.UNKNOWN, StatusCode.Code.INTERNAL,
+            StatusCode.Code.UNAVAILABLE);
+    return builder.build();
+  }
 }

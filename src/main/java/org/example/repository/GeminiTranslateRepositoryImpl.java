@@ -13,22 +13,26 @@ import javax.annotation.Nonnull;
 @Repository
 @RequiredArgsConstructor
 @Qualifier("translateGeminiClient")
-public class GeminiTranslateRepositoryImpl extends GeminiRepositoryAbstract implements TranslateRepository {
+public class GeminiTranslateRepositoryImpl extends GeminiRepositoryAbstract implements
+    TranslateRepository {
 
-    private final GeminiClient geminiClient;
+  private final GeminiClient geminiClient;
 
-    @Override
-    public ResultHolderModel<TranslateResultModel> translate(@Nonnull TranslatePromptModel prompt) {
-        return callGenerateContent(
-                () -> geminiClient.generateContent(
-                        prompt.getContents(), TranslatePromptModel.responseSchema), TranslateResultModel.class, null);
-    }
+  @Override
+  public ResultHolderModel<TranslateResultModel> translate(@Nonnull TranslatePromptModel prompt) {
+    return callGenerateContent(
+        () -> geminiClient.generateContent(
+            prompt.getContents(), TranslatePromptModel.responseSchema), TranslateResultModel.class,
+        null);
+  }
 
-    @Override
-    public ResultHolderModel<TranslateResultModel> translateWithRetry(@Nonnull TranslatePromptModel prompt) {
-        final int retryMax = 3;
-        return callGenerateContent(
-                retryMax, () -> geminiClient.generateContent(
-                        prompt.getContents(), TranslatePromptModel.responseSchema), TranslateResultModel.class, null);
-    }
+  @Override
+  public ResultHolderModel<TranslateResultModel> translateWithRetry(
+      @Nonnull TranslatePromptModel prompt) {
+    final int retryMax = 3;
+    return callGenerateContent(
+        retryMax, () -> geminiClient.generateContent(
+            prompt.getContents(), TranslatePromptModel.responseSchema), TranslateResultModel.class,
+        null);
+  }
 }

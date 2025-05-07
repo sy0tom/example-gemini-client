@@ -14,17 +14,17 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class GeminiClientConfiguration {
 
-    private final ServiceAccountCredentialProvider serviceAccountCredentialProvider;
+  private final ServiceAccountCredentialProvider serviceAccountCredentialProvider;
 
-    @Bean("translateGeminiClient")
-    public GeminiClient getTranslateGeminiClient(
-            @Nonnull GeminiProperties geminiProperties
-    ) throws IOException {
-        serviceAccountCredentialProvider.setScope(geminiProperties.getCredentialsScope());
-        return new GeminiClient(
-                geminiProperties.getProjectId(),
-                geminiProperties.getTransport(),
-                serviceAccountCredentialProvider,
-                geminiProperties.getTasks().get(GeminiTasks.TRANSLATE.name().toLowerCase()));
-    }
+  @Bean("translateGeminiClient")
+  public GeminiClient getTranslateGeminiClient(
+      @Nonnull GeminiProperties geminiProperties
+  ) throws IOException {
+    serviceAccountCredentialProvider.setScope(geminiProperties.getCredentialsScope());
+    return new GeminiClient(
+        geminiProperties.getProjectId(),
+        geminiProperties.getTransport(),
+        serviceAccountCredentialProvider,
+        geminiProperties.getTasks().get(GeminiTasks.TRANSLATE.name().toLowerCase()));
+  }
 }

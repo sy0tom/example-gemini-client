@@ -7,20 +7,20 @@ import java.util.Objects;
 
 public class GenerationConfigFactory {
 
-    public static GenerationConfig create(
-            float temperature,
-            float topP,
-            Schema responseSchema
-    ) {
-        final GenerationConfig.Builder builder = GenerationConfig.newBuilder()
-                .setTemperature(temperature)
-                .setTopP(topP);
+  public static GenerationConfig create(
+      float temperature,
+      float topP,
+      Schema responseSchema
+  ) {
+    final GenerationConfig.Builder builder = GenerationConfig.newBuilder()
+        .setTemperature(temperature)
+        .setTopP(topP);
 
-        if (Objects.nonNull(responseSchema)) {
-            builder.setResponseSchema(responseSchema);
-            builder.setResponseMimeType("application/json");
-        }
-
-        return builder.build();
+    if (Objects.nonNull(responseSchema)) {
+      builder.setResponseSchema(responseSchema);
+      builder.setResponseMimeType("application/json");
     }
+
+    return builder.build();
+  }
 }

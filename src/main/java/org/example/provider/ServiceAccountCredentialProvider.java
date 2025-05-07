@@ -18,26 +18,27 @@ import java.util.Objects;
 @EnableConfigurationProperties(ServiceAccountCredentialProperties.class)
 public class ServiceAccountCredentialProvider implements CredentialsProvider {
 
-    private final ServiceAccountCredentials serviceAccountCredentials;
-    @Setter
-    private String scope;
+  private final ServiceAccountCredentials serviceAccountCredentials;
+  @Setter
+  private String scope;
 
-    public ServiceAccountCredentialProvider(
-            @Nonnull ServiceAccountCredentialProperties properties
-    ) {
-        try {
-            this.serviceAccountCredentials = ServiceAccountCredentials.fromStream(
-                    new ByteArrayInputStream(properties.getCredentialsValue().getBytes(StandardCharsets.UTF_8)));
-        } catch (final IOException e) {
-            throw new UncheckedIOException("GCP Credential load failed.", e);
-        }
+  public ServiceAccountCredentialProvider(
+      @Nonnull ServiceAccountCredentialProperties properties
+  ) {
+    try {
+      this.serviceAccountCredentials = ServiceAccountCredentials.fromStream(
+          new ByteArrayInputStream(
+              properties.getCredentialsValue().getBytes(StandardCharsets.UTF_8)));
+    } catch (final IOException e) {
+      throw new UncheckedIOException("GCP Credential load failed.", e);
     }
+  }
 
-    @Override
-    public Credentials getCredentials() {
-        if (Objects.nonNull(scope)) {
-            return serviceAccountCredentials.createScoped(scope);
-        }
-        return serviceAccountCredentials;
+  @Override
+  public Credentials getCredentials() {
+    if (Objects.nonNull(scope)) {
+      return serviceAccountCredentials.createScoped(scope);
     }
+    return serviceAccountCredentials;
+  }
 }

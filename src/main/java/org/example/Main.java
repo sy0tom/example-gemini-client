@@ -11,15 +11,16 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @RequiredArgsConstructor
 @Qualifier("translateGeminiClient")
 public class Main implements CommandLineRunner {
-   private final TranslateService translateService;
 
-    public static void main(String[] args) {
-        SpringApplication.run(Main.class, args);
-    }
+  private final TranslateService translateService;
 
-    @Override
-    public void run(String... args) {
-        System.out.println(translateService.translate("おはよう").getEN());
-        System.out.println(translateService.translateWithRetry("おやすみ").getKO());
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(Main.class, args);
+  }
+
+  @Override
+  public void run(String... args) {
+    System.out.println(translateService.translate("おはよう").getEN());
+    System.out.println(translateService.translateWithRetry("おやすみ").getKO());
+  }
 }
